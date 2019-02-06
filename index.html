@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+    </style>
+  </head>
+  <body>
+    <h2>Name: </h2><input id="name" autocomplete="off"><button id="saveName">Save</button>
+    <h2>Create chat: </h2><input id="chatName"><button>Create</button>
+    <p id="usrconnected">users online: </p>
+    <p id="typing"></p>
+    <hr>
+    <ul id="messages"></ul>
+    <form action="">
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+    $(function () {
+    var socket = io();
+
+    //these variables are used to clear the "user is typing" message.
+    var typing = false;
+    var timeout = undefined;
+    function timeoutFunction(){
+      //console.log("Timeout");
+      $('#typing').text('');
+      typing = false;
+    }
+
+    $('form').submit(function(e){
+      e.preventDefault(); // prevents page reloading
+      socket.emit('chat message', { msg: $('#m').val(), user: $('#name').val()});
+      $("#messages").append("<li>you: "+ $('#m').val()+ "</li>");
+      $('#m').val('');
+      return false;
+    });
+    $("#m").keydown(function(){
+      socket.emit("typing", $('#name').val());
+    });
+
+
+    //"user is typing" implementation
+    socket.on("typing", function(name){
+      if(typing == false){
+        typing = true;
+        timeout = setTimeout(timeoutFunction, 2000);
+      }
+      else{
+        clearTimeout(timeout);
+        timeout = setTimeout(timeoutFunction, 2000);
+      }
+      $('#typing').text(name + " is typing...");
+    });
+
+    socket.on("chat message", function(payload){
+        $("#messages").append($("<li>").text(payload.user + ": " + payload.msg));
+    });
+    socket.on("connectionChange", function(payload){
+      console.log(Object.keys(payload.userList).length);
+        $("#usrconnected").html("<p>users online: " + Object.keys(payload.userList).length + "</p>");
+        $("#messages").append("<p>" + payload.msg + "</p>");
+    });
+    $("#saveName").click(function(){
+    socket.emit("save name", $("#name").val());
+    });
+  });
+
+
+  </script>
+  </body>
+</html>
