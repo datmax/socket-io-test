@@ -15,7 +15,7 @@
   </head>
   <body>
     <h2>Name: </h2><input id="name" autocomplete="off"><button id="saveName">Save</button>
-    <h2>Create chat: </h2><input id="chatName"><button>Create</button>
+    <h2>Create chat: </h2><input id="roomName"><button id="createRoom">Create</button>
     <p id="usrconnected">users online: </p>
     <p id="typing"></p>
     <hr>
@@ -27,56 +27,58 @@
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
     $(function () {
-    var socket = io();
+      var socket = io();
 
-    //these variables are used to clear the "user is typing" message.
-    var typing = false;
-    var timeout = undefined;
-    function timeoutFunction(){
-      //console.log("Timeout");
-      $('#typing').text('');
-      typing = false;
-    }
-
-    $('form').submit(function(e){
-      e.preventDefault(); // prevents page reloading
-      socket.emit('chat message', { msg: $('#m').val(), user: $('#name').val()});
-      $("#messages").append("<li>you: "+ $('#m').val()+ "</li>");
-      $('#m').val('');
-      return false;
-    });
-    $("#m").keydown(function(){
-      socket.emit("typing", $('#name').val());
-    });
-
-
-    //"user is typing" implementation
-    socket.on("typing", function(name){
-      if(typing == false){
-        typing = true;
-        timeout = setTimeout(timeoutFunction, 2000);
+      //these variables are used to clear the "user is typing" message.
+      var typing = false;
+      var timeout = undefined;
+      function timeoutFunction(){
+        //console.log("Timeout");
+        $('#typing').text('');
+        typing = false;
       }
-      else{
-        clearTimeout(timeout);
-        timeout = setTimeout(timeoutFunction, 2000);
-      }
-      $('#typing').text(name + " is typing...");
-    });
 
-    socket.on("chat message", function(payload){
-        $("#messages").append($("<li>").text(payload.user + ": " + payload.msg));
-    });
-    socket.on("connectionChange", function(payload){
-      console.log(Object.keys(payload.userList).length);
-        $("#usrconnected").html("<p>users online: " + Object.keys(payload.userList).length + "</p>");
-        $("#messages").append("<p>" + payload.msg + "</p>");
-    });
-    $("#saveName").click(function(){
-    socket.emit("save name", $("#name").val());
-    });
-  });
+      $('form').submit(function(e){
+        e.preventDefault(); // prevents page reloading
+        socket.emit('chat message', { msg: $('#m').val(), user: $('#name').val()});
+        $("#messages").append("<li>you: "+ $('#m').val()+ "</li>");
+        $('#m').val('');
+        return false;
+      });
+      $("#m").keydown(function(){
+        socket.emit("typing", $('#name').val());
+      });
 
 
+      //"user is typing" implementation
+      socket.on("typing", function(name){
+        if(typing == false){
+          typing = true;
+          timeout = setTimeout(timeoutFunction, 2000);
+        }
+        else{
+          clearTimeout(timeout);
+          timeout = setTimeout(timeoutFunction, 2000);
+        }
+        $('#typing').text(name + " is typing...");
+      });
+
+      socket.on("chat message", function(payload){
+          $("#messages").append($("<li>").text(payload.user + ": " + payload.msg));
+      });
+      socket.on("connectionChange", function(payload){
+        console.log(Object.keys(payload.userList).length);
+          $("#usrconnected").html("<p>users online: " + Object.keys(payload.userList).length + "</p>");
+          $("#messages").append("<p>" + payload.msg + "</p>");
+      });
+      $("#saveName").click(function(){
+        socket.emit("save name", $("#name").val());
+      });
+      $("#createRoom").click(function() {
+        socket.emit("change room", $("#roomName").val());
+      })
+
+    });
   </script>
   </body>
 </html>
